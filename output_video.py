@@ -11,7 +11,7 @@ lq_yuv_path = '/path/to/your/lq_video.yuv'
 matchinfo = re.search(r"_(\d+)x(\d+)_(\d+)\.yuv$", raw_yuv_path)
 w, h, nfs = int(matchinfo.group(1)),int(matchinfo.group(2)),int(matchinfo.group(3))
 matchvideoname = re.search(r"([^/]+)(?=\.[^.]+$)",lq_yuv_path)
-output_file_name = f"{matchvideoname}_enhanced.yuv" #输出文件名"xxx_enhanced.yuv"
+output_file_name = f"{matchvideoname}_enhanced.yuv" # 输出文件名"xxx_enhanced.yuv"
 ckp_path = 'path/to/your/pth' #存放的模型文件
 def main():
     # ==========
@@ -52,7 +52,8 @@ def main():
     lq_y = lq_y.astype(np.float32) / 255.
     msg = '> yuv loaded.'
     print(msg)
-
+    
+    # 会追加，我懒得写assert了，如果文件已经存在每次使用前要删除，不然会接着写在后面
     fp = open(output_file_name, 'ab')
 
     for idx in range(nfs):
@@ -67,17 +68,19 @@ def main():
             input_data = torch.unsqueeze(input_data, 0).cuda()
 
             # write enhanced frame
-            enhanced_frm = model(input_data)
+            enhanced_frm = model(input_data) # 得到增强后y帧
             enhanced_y = torch.clamp(enhanced_frm, 0, 1) # 避免出现(0,1)之外的值
             enhanced_frm_255 = torch.round(torch.squeeze(enhanced_y*255)).to(dtype =torch.uint8).cpu().numpy()
             enhanced_frm_255 = enhanced_frm_255.ravel()
-            tmp_lq_u = lq_u[idx].ravel()
+            tmp_lq_u = lq_u[idx].ravel() # 使用压缩视频的u和v
             tmp_lq_v = lq_v[idx].ravel()
             first_frm = np.concatenate((enhanced_frm_255, tmp_lq_u, tmp_lq_v))
             # first_frm = first_frm.astype(np.uint8)
             fp.write(first_frm.tobytes())
             print(f"write {idx} frame")
 
+    fp.close()
+    print(f"output video name:{output_file_name}")
     print('> done.')
 
 
